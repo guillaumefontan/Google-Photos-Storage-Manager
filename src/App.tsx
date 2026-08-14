@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Clapperboard, HardDrive, Image, Images } from "lucide-react"
+import { DayPieChart, PHOTO_COLORS, VIDEO_COLORS } from "./DayPieChart"
 import type { LibraryStats } from "./types"
 import { formatBytes, formatCount, yearRange } from "./lib/format"
 
@@ -15,6 +16,8 @@ const EMPTY_STATS: LibraryStats = {
   withUrl: 0,
   indexedAt: null,
   durationMs: 0,
+  topPhotoDays: [],
+  topVideoDays: [],
 }
 
 function App() {
@@ -61,7 +64,7 @@ function App() {
           {loading
             ? "Reading your Google Takeout folders…"
             : years
-              ? `Indexed ${formatCount(stats.itemCount)} items from ${years}`
+              ? `Indexed ${formatCount(stats.itemCount)} items from ${years} · Indexed in ${(stats.durationMs / 1000).toFixed(2)}s`
               : "No year folders found"}
         </p>
       </header>
@@ -99,13 +102,22 @@ function App() {
         />
       </section>
 
-      <footer className="footer">
-        {stats.ready && stats.itemCount > 0 ? (
-          <p>
-            {stats.durationMs ? `Indexed in ${(stats.durationMs / 1000).toFixed(2)}s` : ""}
-          </p>
-        ) : null}
-      </footer>
+      <section className="charts" aria-busy={loading}>
+        <DayPieChart
+          title="Heaviest video days"
+          days={stats.topVideoDays}
+          colors={VIDEO_COLORS}
+          loading={loading}
+          empty="No videos in the library"
+        />
+        <DayPieChart
+          title="Heaviest photo days"
+          days={stats.topPhotoDays}
+          colors={PHOTO_COLORS}
+          loading={loading}
+          empty="No photos in the library"
+        />
+      </section>
     </div>
   )
 }

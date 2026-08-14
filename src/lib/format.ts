@@ -23,3 +23,14 @@ export function yearRange(years: number[]): string {
   if (years.length === 1) return String(years[0])
   return `${years[0]}–${years[years.length - 1]}`
 }
+
+export function formatDay(isoDate: string): string {
+  const [year, month, day] = isoDate.split("-").map(Number)
+  if (!year || !month || !day) return isoDate
+  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  })
+}

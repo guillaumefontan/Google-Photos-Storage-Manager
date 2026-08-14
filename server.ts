@@ -58,6 +58,12 @@ type MediaItem = {
   title: string
 }
 
+type DaySlice = {
+  date: string
+  bytes: number
+  count: number
+}
+
 type LibraryStats = {
   ready: boolean
   error: string | null
@@ -70,6 +76,8 @@ type LibraryStats = {
   withUrl: number
   indexedAt: string | null
   durationMs: number
+  topPhotoDays: DaySlice[]
+  topVideoDays: DaySlice[]
 }
 
 let library: MediaItem[] = []
@@ -257,6 +265,25 @@ async function indexLibrary(): Promise<void> {
   }
 }
 
+function topDays(kind: MediaKind, limit = 10): DaySlice[] {
+  const byDate = new Map<string, DaySlice>()
+
+  for (const item of library) {
+    if (item.kind !== kind) continue
+    const current = byDate.get(item.date)
+    if (current) {
+      current.bytes += item.size
+      current.count += 1
+    } else {
+      byDate.set(item.date, { date: item.date, bytes: item.size, count: 1 })
+    }
+  }
+
+  return [...byDate.values()]
+    .sort((a, b) => b.bytes - a.bytes || b.date.localeCompare(a.date))
+    .slice(0, limit)
+}
+
 function stats(): LibraryStats {
   let photoCount = 0
   let videoCount = 0
@@ -289,6 +316,8 @@ function stats(): LibraryStats {
     withUrl,
     indexedAt,
     durationMs,
+    topPhotoDays: topDays("photo"),
+    topVideoDays: topDays("video"),
   }
 }
 

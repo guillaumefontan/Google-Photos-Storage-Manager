@@ -1,5 +1,11 @@
 export type MediaKind = "photo" | "video"
 
+export type DaySlice = {
+  date: string
+  bytes: number
+  count: number
+}
+
 export type LibraryStats = {
   ready: boolean
   error: string | null
@@ -12,4 +18,6 @@ export type LibraryStats = {
   withUrl: number
   indexedAt: string | null
   durationMs: number
+  topPhotoDays: DaySlice[]
+  topVideoDays: DaySlice[]
 }
