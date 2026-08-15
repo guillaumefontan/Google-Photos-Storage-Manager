@@ -8,6 +8,8 @@
   --color-card: #fffcf7;
   --color-accent: #c2410c;
   --color-accent-soft: #ffedd5;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fee2e2;
 
   --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
   --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
@@ -34,6 +36,8 @@
     --color-card: #1c1916;
     --color-accent: #fb923c;
     --color-accent-soft: #3b2414;
+    --color-danger: #f87171;
+    --color-danger-soft: #3f1a1a;
     --shadow-card-value:
       0 1px 0 rgba(255, 255, 255, 0.04), 0 16px 40px rgba(0, 0, 0, 0.35);
   }

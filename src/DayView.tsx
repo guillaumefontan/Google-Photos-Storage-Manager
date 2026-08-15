@@ -1,11 +1,8 @@
-import { useEffect, useState } from "react"
-import { ArrowLeft, Clapperboard, Image, Trash2 } from "lucide-react"
+import { useEffect, useState, type ReactNode } from "react"
+import { ArrowLeft, Trash2 } from "lucide-react"
+import { MediaPreview } from "./MediaPreview"
 import type { DayLibrary, DayMediaItem } from "./types"
-import { formatBytes, formatCount, formatDay, formatDuration } from "./lib/format"
-
-function mediaSrc(id: string): string {
-  return `/api/media?id=${encodeURIComponent(id)}`
-}
+import { formatBytes, formatCount, formatDay, itemCaption } from "./lib/format"
 
 async function openItem(id: string): Promise<void> {
   const response = await fetch(`/api/open?id=${encodeURIComponent(id)}`, {
@@ -14,68 +11,18 @@ async function openItem(id: string): Promise<void> {
   if (!response.ok) throw new Error(`HTTP ${response.status}`)
 }
 
-function itemCaption(item: DayMediaItem): string {
-  const size = formatBytes(item.size)
-  if (item.kind !== "video") return size
-  if (item.durationSeconds == null) return size
-  return `${size} · ${formatDuration(item.durationSeconds)}`
-}
-
-function MediaPreview({ item }: { item: DayMediaItem }) {
-  const [failed, setFailed] = useState(false)
-  const src = mediaSrc(item.id)
-
-  if (failed) {
-    const Icon = item.kind === "video" ? Clapperboard : Image
-    return (
-      <div className="grid h-full w-full place-items-center bg-paper text-muted">
-        <Icon size={28} strokeWidth={1.5} />
-      </div>
-    )
-  }
-
-  if (item.kind === "video") {
-    return (
-      <video
-        src={`${src}#t=0.001`}
-        muted
-        playsInline
-        preload="metadata"
-        className="h-full w-full object-cover"
-        onError={(error) => {
-          setFailed(true)
-          console.error(error)
-          console.error(src)
-        }}
-      />
-    )
-  }
-
-  return (
-    <img
-      src={src}
-      alt={item.title}
-      draggable={false}
-      className="h-full w-full object-cover"
-      onError={(error) => {
-        setFailed(true)
-        console.error(error)
-        console.error(src)
-      }}
-    />
-  )
-}
-
 export function DayView({
   date,
   markedIds,
   onToggleMark,
   onBack,
+  headerAction,
 }: {
   date: string
   markedIds: Set<string>
-  onToggleMark: (id: string) => void
+  onToggleMark: (item: DayMediaItem) => void
   onBack: () => void
+  headerAction?: ReactNode
 }) {
   const [library, setLibrary] = useState<DayLibrary | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -156,6 +103,7 @@ export function DayView({
             </p>
           </div>
         </div>
+        {headerAction}
       </header>
 
       {loading ? (
@@ -200,7 +148,7 @@ export function DayView({
                       aria-label={
                         marked ? "Unmark for deletion" : "Mark for deletion"
                       }
-                      onClick={() => onToggleMark(item.id)}
+                      onClick={() => onToggleMark(item)}
                       className={`absolute top-2 right-2 z-10 grid size-8 place-items-center rounded-full border shadow-card ${
                         marked
                           ? "border-accent bg-accent-soft text-accent"

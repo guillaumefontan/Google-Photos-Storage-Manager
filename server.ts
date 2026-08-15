@@ -315,6 +315,8 @@ function publicDayItem(item: MediaItem) {
     kind: item.kind,
     size: item.size,
     takenAt: item.takenAt,
+    date: item.date,
+    url: item.url,
     durationSeconds: item.durationSeconds,
   }
 }
@@ -374,6 +376,23 @@ function stats(excludeUnderSeconds: number | null = null): LibraryStats {
   }
 }
 
+function isHttpUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value)
+    return parsed.protocol === "https:" || parsed.protocol === "http:"
+  } catch {
+    return false
+  }
+}
+
+async function parseJsonBody(request: Request): Promise<unknown> {
+  try {
+    return await request.json()
+  } catch {
+    return null
+  }
+}
+
 function json(data: unknown, status = 200): Response {
   return Response.json(data, {
     status,
@@ -419,6 +438,24 @@ const server = Bun.serve({
       if (!item) return json({ error: "Not found" }, 404)
       Bun.spawn(["open", item.path])
       return json({ ok: true })
+    }
+    if (pathname === "/api/open-urls") {
+      if (request.method !== "POST") return json({ error: "Method not allowed" }, 405)
+      const body = await parseJsonBody(request)
+      const urls =
+        body && typeof body === "object" && "urls" in body
+          ? (body as { urls: unknown }).urls
+          : null
+      if (
+        !Array.isArray(urls) ||
+        urls.length === 0 ||
+        !urls.every((entry) => typeof entry === "string")
+      ) {
+        return json({ error: "Invalid urls" }, 400)
+      }
+      const allowed = urls.filter((entry) => isHttpUrl(entry))
+      if (allowed.length > 0) Bun.spawn(["open", "-a", "Safari", ...allowed])
+      return json({ ok: true, opened: allowed.length })
     }
     if (pathname === "/api/health") {
       return json({ ok: true, ready, itemCount: library.length })

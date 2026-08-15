@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react"
 import { Clapperboard, HardDrive, Image, Images } from "lucide-react"
 import { DayPieChart, PHOTO_COLORS, VIDEO_COLORS } from "./DayPieChart"
 import { DayView } from "./DayView"
+import { DeletionQueueButton, DeletionView } from "./DeletionView"
+import { useDeletionQueue } from "./deletionQueue"
 import type { LibraryStats } from "./types"
 import { formatBytes, formatCount, yearRange } from "./lib/format"
 
@@ -27,21 +29,29 @@ function App() {
   const [excludeShort, setExcludeShort] = useState(false)
   const [underSeconds, setUnderSeconds] = useState<number | null>(0)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
-  const [markedIds, setMarkedIds] = useState<Set<string>>(() => new Set())
+  const [deletionOpen, setDeletionOpen] = useState(false)
+  const queue = useDeletionQueue()
   const excludeUnderSeconds = underSeconds ?? 0
-
-  const toggleMark = useCallback((id: string) => {
-    setMarkedIds((current) => {
-      const next = new Set(current)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }, [])
 
   const closeDayView = useCallback(() => {
     setSelectedDate(null)
   }, [])
+
+  const openDeletion = useCallback(() => {
+    setDeletionOpen(true)
+  }, [])
+
+  const closeDeletion = useCallback(() => {
+    setDeletionOpen(false)
+  }, [])
+
+  const deletionButton = (
+    <DeletionQueueButton
+      count={queue.items.length}
+      bytes={queue.totalBytes}
+      onClick={openDeletion}
+    />
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -81,17 +91,25 @@ function App() {
 
   return (
     <div className="relative mx-auto w-[min(1080px,calc(100%-40px))] pt-16 pb-20 max-[720px]:w-[min(1080px,calc(100%-28px))] max-[720px]:pt-20">
-      {selectedDate ? (
+      {deletionOpen ? (
+        <DeletionView
+          items={queue.items}
+          onRemove={queue.remove}
+          onClear={queue.clear}
+          onBack={closeDeletion}
+        />
+      ) : selectedDate ? (
         <DayView
           key={selectedDate}
           date={selectedDate}
-          markedIds={markedIds}
-          onToggleMark={toggleMark}
+          markedIds={queue.markedIds}
+          onToggleMark={queue.toggle}
           onBack={closeDayView}
+          headerAction={deletionButton}
         />
       ) : (
         <>
-          <header className="mb-10 text-sm flex items-center justify-between">
+          <header className="mb-1 text-sm flex items-center justify-between gap-4">
             <div>
               <span className="text-muted">
                 {loading
@@ -104,38 +122,41 @@ function App() {
                 {!loading && ` · Indexed in ${(stats.durationMs / 1000).toFixed(2)}s`}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-muted">
-              <input
-                id="exclude-short"
-                type="checkbox"
-                className="size-3.5 accent-accent"
-                checked={excludeShort}
-                onChange={(event) => setExcludeShort(event.target.checked)}
-              />
-              <label htmlFor="exclude-short" className="cursor-pointer select-none">
-                Exclude videos under
-              </label>
-              <input
-                type="number"
-                min={0}
-                step={1}
-                inputMode="numeric"
-                aria-label="Exclude videos shorter than this many seconds"
-                value={underSeconds ?? ""}
-                onChange={(event) => {
-                  const raw = event.target.value
-                  if (raw === "") {
-                    setUnderSeconds(null)
-                    return
-                  }
-                  const next = Number.parseInt(raw, 10)
-                  if (Number.isFinite(next) && next >= 0) setUnderSeconds(next)
-                }}
-                className="h-7 w-12 rounded-md border border-line bg-card px-1.5 text-center font-mono text-[13px] text-ink tabular-nums outline-none focus:border-accent [appearance:textfield]"
-              />
-              <span>seconds</span>
+            <div className="flex items-center gap-4">
+              {deletionButton}
             </div>
           </header>
+          <div className="flex items-center gap-2 text-muted text-sm mb-10">
+            <input
+              id="exclude-short"
+              type="checkbox"
+              className="size-3.5 accent-accent"
+              checked={excludeShort}
+              onChange={(event) => setExcludeShort(event.target.checked)}
+            />
+            <label htmlFor="exclude-short" className="cursor-pointer select-none">
+              Exclude videos under
+            </label>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              inputMode="numeric"
+              aria-label="Exclude videos shorter than this many seconds"
+              value={underSeconds ?? ""}
+              onChange={(event) => {
+                const raw = event.target.value
+                if (raw === "") {
+                  setUnderSeconds(null)
+                  return
+                }
+                const next = Number.parseInt(raw, 10)
+                if (Number.isFinite(next) && next >= 0) setUnderSeconds(next)
+              }}
+              className="h-7 w-12 rounded-md border border-line bg-card px-1.5 text-center font-mono text-[13px] text-ink tabular-nums outline-none focus:border-accent [appearance:textfield]"
+            />
+            <span>seconds</span>
+          </div>
 
           {error && stats.ready ? (
             <p

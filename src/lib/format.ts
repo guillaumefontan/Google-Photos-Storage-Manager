@@ -1,3 +1,5 @@
+import type { DayMediaItem } from "../types"
+
 /** Google account storage uses SI units: 1 GB = 1 billion bytes. */
 const KB = 1000
 const MB = 1_000_000
@@ -10,6 +12,11 @@ export function formatBytes(bytes: number): string {
     const mb = bytes / MB
     return `${mb.toFixed(mb >= 10 ? 1 : 2)} MB`
   }
+  const gb = bytes / GB
+  return `${gb.toFixed(gb >= 10 ? 1 : 2)} GB`
+}
+
+export function formatGigabytes(bytes: number): string {
   const gb = bytes / GB
   return `${gb.toFixed(gb >= 10 ? 1 : 2)} GB`
 }
@@ -33,6 +40,13 @@ export function formatDuration(seconds: number): string {
     return `${hours}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
   }
   return `${minutes}:${String(secs).padStart(2, "0")}`
+}
+
+export function itemCaption(item: DayMediaItem): string {
+  const size = formatBytes(item.size)
+  if (item.kind !== "video") return size
+  if (item.durationSeconds == null) return size
+  return `${size} · ${formatDuration(item.durationSeconds)}`
 }
 
 export function formatDay(isoDate: string): string {

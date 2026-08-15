@@ -13,6 +13,8 @@ export type DayMediaItem = {
   kind: MediaKind
   size: number
   takenAt: number
+  date: string
+  url: string | null
   durationSeconds: number | null
 }
 
