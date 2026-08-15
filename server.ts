@@ -1,5 +1,6 @@
 import { readdir, stat } from "node:fs/promises"
 import { join } from "node:path"
+import { readVideoDurationSeconds } from "./videoDuration.ts"
 
 const PORT = 3000
 const PHOTOS_ROOT =
@@ -56,6 +57,7 @@ type MediaItem = {
   date: string
   url: string | null
   title: string
+  durationSeconds: number | null
 }
 
 type DaySlice = {
@@ -201,9 +203,12 @@ async function indexFolder(
 
       const path = join(folder, filename)
       const sidecar = findSidecar(filename, jsons)
-      const [fileStat, meta] = await Promise.all([
+      const [fileStat, meta, durationSeconds] = await Promise.all([
         stat(path),
         sidecar ? readMeta(join(folder, sidecar)) : Promise.resolve(null),
+        kind === "video"
+          ? readVideoDurationSeconds(path, extensionOf(filename))
+          : Promise.resolve(null),
       ])
 
       if (!fileStat.isFile()) return null
@@ -219,6 +224,7 @@ async function indexFolder(
         date: toUtcDate(takenAt),
         url: meta?.url ?? null,
         title: meta?.title ?? filename,
+        durationSeconds,
       } satisfies MediaItem
     }),
   )
@@ -265,10 +271,24 @@ async function indexLibrary(): Promise<void> {
   }
 }
 
-function topDays(kind: MediaKind, limit = 10): DaySlice[] {
+function visibleLibrary(excludeUnderSeconds: number | null): MediaItem[] {
+  if (excludeUnderSeconds == null) return library
+  return library.filter(
+    (item) =>
+      item.kind !== "video" ||
+      item.durationSeconds == null ||
+      item.durationSeconds >= excludeUnderSeconds,
+  )
+}
+
+function topDays(
+  items: MediaItem[],
+  kind: MediaKind,
+  limit = 10,
+): DaySlice[] {
   const byDate = new Map<string, DaySlice>()
 
-  for (const item of library) {
+  for (const item of items) {
     if (item.kind !== kind) continue
     const current = byDate.get(item.date)
     if (current) {
@@ -284,7 +304,16 @@ function topDays(kind: MediaKind, limit = 10): DaySlice[] {
     .slice(0, limit)
 }
 
-function stats(): LibraryStats {
+function parseExcludeUnderSeconds(url: URL): number | null {
+  const raw = url.searchParams.get("excludeUnderSeconds")
+  if (raw == null || raw === "") return null
+  const value = Number(raw)
+  if (!Number.isFinite(value) || value <= 0) return null
+  return value
+}
+
+function stats(excludeUnderSeconds: number | null = null): LibraryStats {
+  const items = visibleLibrary(excludeUnderSeconds)
   let photoCount = 0
   let videoCount = 0
   let photoBytes = 0
@@ -292,7 +321,7 @@ function stats(): LibraryStats {
   let withUrl = 0
   const yearSet = new Set<number>()
 
-  for (const item of library) {
+  for (const item of items) {
     yearSet.add(item.year)
     if (item.url) withUrl += 1
     if (item.kind === "photo") {
@@ -311,13 +340,13 @@ function stats(): LibraryStats {
     videoCount,
     photoBytes,
     videoBytes,
-    itemCount: library.length,
+    itemCount: items.length,
     years: [...yearSet].sort((a, b) => a - b),
     withUrl,
     indexedAt,
     durationMs,
-    topPhotoDays: topDays("photo"),
-    topVideoDays: topDays("video"),
+    topPhotoDays: topDays(items, "photo"),
+    topVideoDays: topDays(items, "video"),
   }
 }
 
@@ -333,9 +362,12 @@ function json(data: unknown, status = 200): Response {
 const server = Bun.serve({
   port: PORT,
   fetch(request) {
-    const { pathname } = new URL(request.url)
+    const url = new URL(request.url)
+    const { pathname } = url
 
-    if (pathname === "/api/stats") return json(stats())
+    if (pathname === "/api/stats") {
+      return json(stats(parseExcludeUnderSeconds(url)))
+    }
     if (pathname === "/api/health") {
       return json({ ok: true, ready, itemCount: library.length })
     }

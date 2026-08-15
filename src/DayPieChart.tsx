@@ -41,10 +41,10 @@ function DayTooltip({ active, payload }: TooltipContentProps) {
   if (!active || !payload?.[0]) return null
   const row = payload[0].payload as ChartRow
   return (
-    <div className="chart-tooltip">
-      <strong>{row.label}</strong>
+    <div className="grid gap-0.5 rounded-[10px] border border-line bg-card px-2.5 py-2 text-[13px] text-ink shadow-card">
+      <strong className="font-semibold">{row.label}</strong>
       <span>{formatBytes(row.bytes)}</span>
-      <span className="chart-tooltip-count">
+      <span className="text-xs text-muted">
         {row.count.toLocaleString()} {row.count === 1 ? "item" : "items"}
       </span>
     </div>
@@ -71,11 +71,13 @@ export function DayPieChart({
   const total = data.reduce((sum, day) => sum + day.bytes, 0)
 
   return (
-    <article className="card chart-card">
-      <div className="card-top">
-        <h2>{title}</h2>
+    <article className="rounded-[18px] border border-line bg-card px-5.5 pt-5.5 pb-5 shadow-card">
+      <div className="flex items-center gap-2.5">
+        <h2 className="m-0 text-[13px] font-semibold tracking-[0.04em] text-muted uppercase">
+          {title}
+        </h2>
       </div>
-      <p className="hint">
+      <p className="mt-2.5 mb-0 text-[13px] text-muted">
         {loading
           ? "Grouping by day…"
           : data.length > 0
@@ -83,13 +85,16 @@ export function DayPieChart({
             : empty}
       </p>
       {loading ? (
-        <div className="chart-skeleton" aria-hidden="true" />
+        <div
+          className="mt-4 h-60 animate-shimmer rounded-xl bg-linear-to-r from-line via-paper to-line bg-size-[200%_100%]"
+          aria-hidden="true"
+        />
       ) : data.length === 0 ? (
-        <div className="chart-empty" />
+        <div className="mt-4 h-60 rounded-xl bg-paper" />
       ) : (
-        <div className="chart-body">
-          <div className="chart-plot">
-            <ResponsiveContainer width="100%" height={240}>
+        <div className="mt-2">
+          <div className="min-w-0">
+            <ResponsiveContainer width="100%" height={400}>
               <PieChart>
                 <Pie
                   data={data}
@@ -97,10 +102,10 @@ export function DayPieChart({
                   nameKey="label"
                   cx="50%"
                   cy="50%"
-                  innerRadius={0}
-                  outerRadius="88%"
-                  paddingAngle={1.5}
-                  stroke="var(--card)"
+                  innerRadius="50%"
+                  outerRadius="100%"
+                  paddingAngle={0}
+                  stroke="var(--color-card)"
                   strokeWidth={2}
                 >
                   {data.map((row, index) => (
@@ -114,18 +119,6 @@ export function DayPieChart({
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <ol className="chart-legend">
-            {data.map((row, index) => (
-              <li key={row.date}>
-                <span
-                  className="swatch"
-                  style={{ background: colors[index % colors.length] }}
-                />
-                <span className="legend-label">{row.label}</span>
-                <span className="legend-value">{formatBytes(row.bytes)}</span>
-              </li>
-            ))}
-          </ol>
         </div>
       )}
     </article>

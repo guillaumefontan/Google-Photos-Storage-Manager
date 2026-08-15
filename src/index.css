@@ -1,286 +1,42 @@
 @import "tailwindcss";
 
+@theme {
+  --color-paper: #f3eee4;
+  --color-ink: #1c1917;
+  --color-muted: #78716c;
+  --color-line: #e7dfd2;
+  --color-card: #fffcf7;
+  --color-accent: #c2410c;
+  --color-accent-soft: #ffedd5;
+
+  --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+
+  --animate-shimmer: shimmer 1.2s ease-in-out infinite;
+}
+
+@theme inline {
+  --shadow-card: var(--shadow-card-value);
+}
+
 :root {
-  --paper: #f3eee4;
-  --ink: #1c1917;
-  --muted: #78716c;
-  --line: #e7dfd2;
-  --card: #fffcf7;
-  --accent: #c2410c;
-  --accent-soft: #ffedd5;
-  --shadow: 0 1px 0 rgba(28, 25, 23, 0.04), 0 12px 32px rgba(28, 25, 23, 0.06);
-  --sans: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --ui: system-ui, "Segoe UI", Roboto, sans-serif;
-  --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
-  color-scheme: light dark;
+  --shadow-card-value:
+    0 1px 0 rgba(28, 25, 23, 0.04), 0 12px 32px rgba(28, 25, 23, 0.06);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #161310;
-    --ink: #f5f0e8;
-    --muted: #a8a29e;
-    --line: #2d2925;
-    --card: #1c1916;
-    --accent: #fb923c;
-    --accent-soft: #3b2414;
-    --shadow: 0 1px 0 rgba(255, 255, 255, 0.04), 0 16px 40px rgba(0, 0, 0, 0.35);
+    --color-paper: #161310;
+    --color-ink: #f5f0e8;
+    --color-muted: #a8a29e;
+    --color-line: #2d2925;
+    --color-card: #1c1916;
+    --color-accent: #fb923c;
+    --color-accent-soft: #3b2414;
+    --shadow-card-value:
+      0 1px 0 rgba(255, 255, 255, 0.04), 0 16px 40px rgba(0, 0, 0, 0.35);
   }
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body,
-#root {
-  margin: 0;
-  min-height: 100svh;
-}
-
-body {
-  font-family: var(--ui);
-  background: var(--paper);
-  color: var(--ink);
-  -webkit-font-smoothing: antialiased;
-}
-
-#root {
-  width: 100%;
-}
-
-.page {
-  width: min(1080px, calc(100% - 40px));
-  margin: 0 auto;
-  padding: 64px 0 80px;
-}
-
-.header {
-  margin-bottom: 40px;
-}
-
-.eyebrow {
-  margin: 0 0 8px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-
-.header h1 {
-  margin: 0;
-  font-family: var(--sans);
-  font-size: clamp(40px, 6vw, 64px);
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-}
-
-.lede {
-  margin: 12px 0 0;
-  color: var(--muted);
-  font-size: 16px;
-}
-
-.banner {
-  margin: 0 0 24px;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--card);
-  color: var(--accent);
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.charts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.chart-card h2 {
-  text-transform: uppercase;
-}
-
-.chart-card .hint {
-  margin: 10px 0 0;
-}
-
-.chart-body {
-  display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(0, 1.1fr);
-  gap: 8px 16px;
-  align-items: center;
-  margin-top: 8px;
-}
-
-.chart-plot {
-  min-width: 0;
-}
-
-.chart-legend {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 6px;
-}
-
-.chart-legend li {
-  display: grid;
-  grid-template-columns: 8px minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: center;
-  font-size: 12px;
-  line-height: 1.3;
-}
-
-.swatch {
-  width: 8px;
-  height: 8px;
-  border-radius: 99px;
-}
-
-.legend-label {
-  color: var(--ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.legend-value {
-  font-family: var(--mono);
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.chart-tooltip {
-  display: grid;
-  gap: 2px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 8px 10px;
-  box-shadow: var(--shadow);
-  font-size: 13px;
-  color: var(--ink);
-}
-
-.chart-tooltip strong {
-  font-weight: 600;
-}
-
-.chart-tooltip-count {
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.chart-skeleton,
-.chart-empty {
-  height: 240px;
-  margin-top: 16px;
-  border-radius: 12px;
-  background: var(--paper);
-}
-
-.chart-skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--line) 0%,
-    var(--paper) 50%,
-    var(--line) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.2s ease-in-out infinite;
-}
-
-.card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 22px 22px 20px;
-  box-shadow: var(--shadow);
-}
-
-.card-top {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.icon-wrap {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
-.card h2 {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.value {
-  margin: 18px 0 8px;
-  font-family: var(--mono);
-  font-size: clamp(28px, 4vw, 40px);
-  font-weight: 500;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.hint {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.skeleton {
-  margin: 22px 0 14px;
-  height: 40px;
-  width: 46%;
-  border-radius: 8px;
-  background: linear-gradient(
-    90deg,
-    var(--line) 0%,
-    var(--paper) 50%,
-    var(--line) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.2s ease-in-out infinite;
-}
-
-.footer {
-  margin-top: 28px;
-  color: var(--muted);
-  font-size: 13px;
-  display: grid;
-  gap: 6px;
-}
-
-.footer p {
-  margin: 0;
-}
-
-.footer code {
-  font-family: var(--mono);
-  font-size: 12px;
 }
 
 @keyframes shimmer {
@@ -289,18 +45,5 @@ body {
   }
   100% {
     background-position: -100% 0;
-  }
-}
-
-@media (max-width: 720px) {
-  .page {
-    width: min(1080px, calc(100% - 28px));
-    padding-top: 36px;
-  }
-
-  .grid,
-  .charts,
-  .chart-body {
-    grid-template-columns: 1fr;
   }
 }
