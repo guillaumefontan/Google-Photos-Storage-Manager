@@ -7,6 +7,13 @@ function mediaSrc(id: string): string {
   return `/api/media?id=${encodeURIComponent(id)}`
 }
 
+async function openItem(id: string): Promise<void> {
+  const response = await fetch(`/api/open?id=${encodeURIComponent(id)}`, {
+    method: "POST",
+  })
+  if (!response.ok) throw new Error(`HTTP ${response.status}`)
+}
+
 function itemCaption(item: DayMediaItem): string {
   const size = formatBytes(item.size)
   if (item.kind !== "video") return size
@@ -177,9 +184,16 @@ export function DayView({
                   }`}
                 >
                   <div className="relative aspect-square bg-paper">
-                    <div className={marked ? "h-full opacity-45" : "h-full"}>
+                    <button
+                      type="button"
+                      aria-label={`Open ${item.title}`}
+                      onClick={() => void openItem(item.id)}
+                      className={`block h-full w-full cursor-pointer border-0 bg-transparent p-0 ${
+                        marked ? "opacity-45" : ""
+                      }`}
+                    >
                       <MediaPreview item={item} />
-                    </div>
+                    </button>
                     <button
                       type="button"
                       aria-pressed={marked}

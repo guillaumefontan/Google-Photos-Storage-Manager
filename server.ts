@@ -412,6 +412,14 @@ const server = Bun.serve({
         },
       })
     }
+    if (pathname === "/api/open") {
+      const id = url.searchParams.get("id")
+      if (!id) return json({ error: "Missing id" }, 400)
+      const item = library.find((entry) => entry.id === id)
+      if (!item) return json({ error: "Not found" }, 404)
+      Bun.spawn(["open", item.path])
+      return json({ ok: true })
+    }
     if (pathname === "/api/health") {
       return json({ ok: true, ready, itemCount: library.length })
     }
