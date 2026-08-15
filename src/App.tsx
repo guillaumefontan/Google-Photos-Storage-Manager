@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Clapperboard, HardDrive, Image, Images } from "lucide-react"
 import { DayPieChart, PHOTO_COLORS, VIDEO_COLORS } from "./DayPieChart"
+import { DayView } from "./DayView"
 import type { LibraryStats } from "./types"
 import { formatBytes, formatCount, yearRange } from "./lib/format"
 
@@ -25,7 +26,22 @@ function App() {
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [excludeShort, setExcludeShort] = useState(false)
   const [underSeconds, setUnderSeconds] = useState<number | null>(0)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [markedIds, setMarkedIds] = useState<Set<string>>(() => new Set())
   const excludeUnderSeconds = underSeconds ?? 0
+
+  const toggleMark = useCallback((id: string) => {
+    setMarkedIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const closeDayView = useCallback(() => {
+    setSelectedDate(null)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -65,106 +81,120 @@ function App() {
 
   return (
     <div className="relative mx-auto w-[min(1080px,calc(100%-40px))] pt-16 pb-20 max-[720px]:w-[min(1080px,calc(100%-28px))] max-[720px]:pt-20">
-      <header className="mb-10 text-sm flex items-center justify-between">
-        <div>
-          <span className="text-muted">
-            {loading
-              ? "Reading your Google Takeout folders…"
-              : years
-                ? `Indexed ${formatCount(stats.itemCount)} items from ${years}`
-                : "No year folders found in Pictures/Google Photos"}
-          </span>
-          <span className="text-accent">
-            {!loading && ` · Indexed in ${(stats.durationMs / 1000).toFixed(2)}s`}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 text-muted">
-          <input
-            id="exclude-short"
-            type="checkbox"
-            className="size-3.5 accent-accent"
-            checked={excludeShort}
-            onChange={(event) => setExcludeShort(event.target.checked)}
-          />
-          <label htmlFor="exclude-short" className="cursor-pointer select-none">
-            Exclude videos under
-          </label>
-          <input
-            type="number"
-            min={0}
-            step={1}
-            inputMode="numeric"
-            aria-label="Exclude videos shorter than this many seconds"
-            value={underSeconds ?? ""}
-            onChange={(event) => {
-              const raw = event.target.value
-              if (raw === "") {
-                setUnderSeconds(null)
-                return
-              }
-              const next = Number.parseInt(raw, 10)
-              if (Number.isFinite(next) && next >= 0) setUnderSeconds(next)
-            }}
-            className="h-7 w-12 rounded-md border border-line bg-card px-1.5 text-center font-mono text-[13px] text-ink tabular-nums outline-none focus:border-accent [appearance:textfield]"
-          />
-          <span>seconds</span>
-        </div>
-      </header>
+      {selectedDate ? (
+        <DayView
+          key={selectedDate}
+          date={selectedDate}
+          markedIds={markedIds}
+          onToggleMark={toggleMark}
+          onBack={closeDayView}
+        />
+      ) : (
+        <>
+          <header className="mb-10 text-sm flex items-center justify-between">
+            <div>
+              <span className="text-muted">
+                {loading
+                  ? "Reading your Google Takeout folders…"
+                  : years
+                    ? `Indexed ${formatCount(stats.itemCount)} items from ${years}`
+                    : "No year folders found in Pictures/Google Photos"}
+              </span>
+              <span className="text-accent">
+                {!loading && ` · Indexed in ${(stats.durationMs / 1000).toFixed(2)}s`}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-muted">
+              <input
+                id="exclude-short"
+                type="checkbox"
+                className="size-3.5 accent-accent"
+                checked={excludeShort}
+                onChange={(event) => setExcludeShort(event.target.checked)}
+              />
+              <label htmlFor="exclude-short" className="cursor-pointer select-none">
+                Exclude videos under
+              </label>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                inputMode="numeric"
+                aria-label="Exclude videos shorter than this many seconds"
+                value={underSeconds ?? ""}
+                onChange={(event) => {
+                  const raw = event.target.value
+                  if (raw === "") {
+                    setUnderSeconds(null)
+                    return
+                  }
+                  const next = Number.parseInt(raw, 10)
+                  if (Number.isFinite(next) && next >= 0) setUnderSeconds(next)
+                }}
+                className="h-7 w-12 rounded-md border border-line bg-card px-1.5 text-center font-mono text-[13px] text-ink tabular-nums outline-none focus:border-accent [appearance:textfield]"
+              />
+              <span>seconds</span>
+            </div>
+          </header>
 
-      {error && stats.ready ? (
-        <p
-          className="mb-6 rounded-xl border border-line bg-card px-3.5 py-3 text-accent"
-          role="alert"
-        >
-          {error}
-        </p>
-      ) : null}
+          {error && stats.ready ? (
+            <p
+              className="mb-6 rounded-xl border border-line bg-card px-3.5 py-3 text-accent"
+              role="alert"
+            >
+              {error}
+            </p>
+          ) : null}
 
-      <section
-        className="grid grid-cols-4 gap-4 max-[720px]:grid-cols-1"
-        aria-busy={loading}
-      >
-        <StatCard
-          icon={Images}
-          label="Photos"
-          value={loading ? null : formatCount(stats.photoCount)}
-        />
-        <StatCard
-          icon={Image}
-          label="Photo size"
-          value={loading ? null : formatBytes(stats.photoBytes)}
-        />
-        <StatCard
-          icon={Clapperboard}
-          label="Videos"
-          value={loading ? null : formatCount(stats.videoCount)}
-        />
-        <StatCard
-          icon={HardDrive}
-          label="Video size"
-          value={loading ? null : formatBytes(stats.videoBytes)}
-        />
-      </section>
+          <section
+            className="grid grid-cols-4 gap-4 max-[720px]:grid-cols-1"
+            aria-busy={loading}
+          >
+            <StatCard
+              icon={Images}
+              label="Photos"
+              value={loading ? null : formatCount(stats.photoCount)}
+            />
+            <StatCard
+              icon={Image}
+              label="Photo size"
+              value={loading ? null : formatBytes(stats.photoBytes)}
+            />
+            <StatCard
+              icon={Clapperboard}
+              label="Videos"
+              value={loading ? null : formatCount(stats.videoCount)}
+            />
+            <StatCard
+              icon={HardDrive}
+              label="Video size"
+              value={loading ? null : formatBytes(stats.videoBytes)}
+            />
+          </section>
 
-      <section
-        className="mt-4 grid grid-cols-2 gap-4 max-[720px]:grid-cols-1"
-        aria-busy={loading}
-      >
-        <DayPieChart
-          title="Heaviest photo days"
-          days={stats.topPhotoDays}
-          colors={PHOTO_COLORS}
-          loading={loading}
-          empty="No photos in the library"
-        />
-        <DayPieChart
-          title="Heaviest video days"
-          days={stats.topVideoDays}
-          colors={VIDEO_COLORS}
-          loading={loading}
-          empty="No videos in the library"
-        />
-      </section>
+          <section
+            className="mt-4 grid grid-cols-2 gap-4 max-[720px]:grid-cols-1"
+            aria-busy={loading}
+          >
+            <DayPieChart
+              title="Heaviest photo days"
+              days={stats.topPhotoDays}
+              colors={PHOTO_COLORS}
+              loading={loading}
+              empty="No photos in the library"
+              onSelectDay={setSelectedDate}
+            />
+            <DayPieChart
+              title="Heaviest video days"
+              days={stats.topVideoDays}
+              colors={VIDEO_COLORS}
+              loading={loading}
+              empty="No videos in the library"
+              onSelectDay={setSelectedDate}
+            />
+          </section>
+        </>
+      )}
     </div>
   )
 }

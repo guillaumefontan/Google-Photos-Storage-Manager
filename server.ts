@@ -1,5 +1,5 @@
 import { readdir, stat } from "node:fs/promises"
-import { join } from "node:path"
+import { join, relative } from "node:path"
 import { readVideoDurationSeconds } from "./videoDuration.ts"
 
 const PORT = 3000
@@ -32,7 +32,6 @@ const PHOTO_EXT = new Set([
   ".tif",
   ".tiff",
   ".avif",
-  ".mp",
   ".jxl",
   ".raw",
 ])
@@ -48,6 +47,7 @@ type TakeoutMeta = {
 }
 
 type MediaItem = {
+  id: string
   filename: string
   path: string
   year: number
@@ -215,6 +215,7 @@ async function indexFolder(
 
       const takenAt = resolveTakenAt(filename, meta, fileStat)
       return {
+        id: relative(PHOTOS_ROOT, path),
         filename,
         path,
         year,
@@ -304,6 +305,29 @@ function topDays(
     .slice(0, limit)
 }
 
+const DATE_QUERY = /^\d{4}-\d{2}-\d{2}$/
+
+function publicDayItem(item: MediaItem) {
+  return {
+    id: item.id,
+    filename: item.filename,
+    title: item.title,
+    kind: item.kind,
+    size: item.size,
+    takenAt: item.takenAt,
+    durationSeconds: item.durationSeconds,
+  }
+}
+
+function itemsForDate(date: string) {
+  return library
+    .filter((item) => item.date === date)
+    .sort(
+      (a, b) => a.takenAt - b.takenAt || a.filename.localeCompare(b.filename),
+    )
+    .map(publicDayItem)
+}
+
 function parseExcludeUnderSeconds(url: URL): number | null {
   const raw = url.searchParams.get("excludeUnderSeconds")
   if (raw == null || raw === "") return null
@@ -361,12 +385,32 @@ function json(data: unknown, status = 200): Response {
 
 const server = Bun.serve({
   port: PORT,
-  fetch(request) {
+  async fetch(request) {
     const url = new URL(request.url)
     const { pathname } = url
 
     if (pathname === "/api/stats") {
       return json(stats(parseExcludeUnderSeconds(url)))
+    }
+    if (pathname === "/api/day") {
+      const date = url.searchParams.get("date")
+      if (!date || !DATE_QUERY.test(date)) {
+        return json({ error: "Invalid date" }, 400)
+      }
+      return json({ date, items: itemsForDate(date) })
+    }
+    if (pathname === "/api/media") {
+      const id = url.searchParams.get("id")
+      if (!id) return json({ error: "Missing id" }, 400)
+      const item = library.find((entry) => entry.id === id)
+      if (!item) return json({ error: "Not found" }, 404)
+      const file = Bun.file(item.path)
+      if (!(await file.exists())) return json({ error: "Not found" }, 404)
+      return new Response(file, {
+        headers: {
+          "Cache-Control": "private, max-age=3600",
+        },
+      })
     }
     if (pathname === "/api/health") {
       return json({ ok: true, ready, itemCount: library.length })

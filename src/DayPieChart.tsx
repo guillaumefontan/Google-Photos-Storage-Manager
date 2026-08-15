@@ -51,18 +51,28 @@ function DayTooltip({ active, payload }: TooltipContentProps) {
   )
 }
 
+function dateFromSlice(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null
+  const row = data as { date?: unknown; payload?: { date?: unknown } }
+  if (typeof row.date === "string") return row.date
+  if (typeof row.payload?.date === "string") return row.payload.date
+  return null
+}
+
 export function DayPieChart({
   title,
   days,
   colors,
   loading,
   empty,
+  onSelectDay,
 }: {
   title: string
   days: DaySlice[]
   colors: string[]
   loading: boolean
   empty: string
+  onSelectDay: (date: string) => void
 }) {
   const data: ChartRow[] = days.map((day) => ({
     ...day,
@@ -107,11 +117,17 @@ export function DayPieChart({
                   paddingAngle={0}
                   stroke="var(--color-card)"
                   strokeWidth={2}
+                  cursor="pointer"
+                  onClick={(slice) => {
+                    const date = dateFromSlice(slice)
+                    if (date) onSelectDay(date)
+                  }}
                 >
                   {data.map((row, index) => (
                     <Cell
                       key={row.date}
                       fill={colors[index % colors.length]}
+                      style={{ cursor: "pointer" }}
                     />
                   ))}
                 </Pie>

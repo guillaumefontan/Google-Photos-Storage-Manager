@@ -6,6 +6,21 @@ export type DaySlice = {
   count: number
 }
 
+export type DayMediaItem = {
+  id: string
+  filename: string
+  title: string
+  kind: MediaKind
+  size: number
+  takenAt: number
+  durationSeconds: number | null
+}
+
+export type DayLibrary = {
+  date: string
+  items: DayMediaItem[]
+}
+
 export type LibraryStats = {
   ready: boolean
   error: string | null
